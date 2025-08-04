@@ -15,13 +15,17 @@ PRESEED_PATH="$WORKDIR/preseed.cfg"
 echo "==> [1/8] Installation des outils requis..."
 sudo apt update && sudo apt install -y wget genisoimage isolinux
 
-echo "==> [2/8] Téléchargement de l’ISO officielle Debian..."
-wget -O "$ISO_NAME" "$ISO_URL"
+if [ ! -f "ISO_NAME" ]; then
+  echo "==> [2/8] Téléchargement de l’ISO officielle Debian..."
+  wget -O "$ISO_NAME" "$ISO_URL"
+fi
 
 echo "==> [3/8] Préparation des dossiers de travail..."
 mkdir -p "$EXTRACTED_ISO_DIR" "$MOUNT_DIR"
 
-sudo unmount "$MOUNT_DIR" 2>/dev/null || true
+if mountpoint -q "$MOUNT_DIR"; then
+  sudo unmount "$MOUNT_DIR" 2>/dev/null || true
+fi
 
 echo "==> [4/8] Montage de l’ISO..."
 sudo mount -o loop "$ISO_NAME" "$MOUNT_DIR"
