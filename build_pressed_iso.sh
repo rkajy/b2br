@@ -21,6 +21,8 @@ wget -O "$ISO_NAME" "$ISO_URL"
 echo "==> [3/8] Préparation des dossiers de travail..."
 mkdir -p "$EXTRACTED_ISO_DIR" "$MOUNT_DIR"
 
+sudo unmount "$MOUNT_DIR" 2>/dev/null || true
+
 echo "==> [4/8] Montage de l’ISO..."
 sudo mount -o loop "$ISO_NAME" "$MOUNT_DIR"
 
