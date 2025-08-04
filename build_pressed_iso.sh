@@ -42,7 +42,7 @@ echo "==> [6/8] Ajout de preseed.cfg dans l’ISO..."
 cp "$PRESEED_PATH" "$EXTRACTED_ISO_DIR/"
 
 echo "==> [7/8] Modification de isolinux/txt.cfg pour démarrer automatiquement avec preseed..."
-sudo sed -i '/label install/,/append/ s@append.*@append auto=true priority=critical preseed/file=/cdrom/preseed.cfg vga=788 initrd=/install.amd/initrd.gz --- quiet@' "$EXTRACTED_ISO_DIR/isolinux/txt.cfg"
+sudo sed -i '/label install/,/append/ s@append.*@append auto=true priority=critical preseed/file=/cdrom/preseed.cfg vga=788 initrd=/install.amd/initrd.gz langage=en country=DE locale=en_US.UTF-8 --- quiet@' "$EXTRACTED_ISO_DIR/isolinux/txt.cfg"
 
 echo "==> [8/8] Génération de l’ISO personnalisée..."
 sudo genisoimage -o "$OUTPUT_ISO" \
