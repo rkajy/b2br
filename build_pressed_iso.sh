@@ -23,8 +23,11 @@ fi
 echo "==> [3/8] Préparation des dossiers de travail..."
 mkdir -p "$EXTRACTED_ISO_DIR" "$MOUNT_DIR"
 
-if mountpoint -q "$MOUNT_DIR"; then
+#Verification et demontage si besoin du point de montage
+if mount | grep -q "$ISO_NAME"; then
   sudo unmount "$MOUNT_DIR" 2>/dev/null || true
+  #On cherche et demonte tout point ou ISO_NAME est monte
+  mount | grep "$ISO_NAME" | awk '{print $3}' | xargs -r -n1 sudo unmount || true
 fi
 
 echo "==> [4/8] Montage de l’ISO..."
