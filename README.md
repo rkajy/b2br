@@ -22,3 +22,14 @@ Le mot de passe root / user est Bn2br-2025! (conforme à la politique stricte Bo
 | **Périphérique de démarrage** | CD/DVD en premier                                                          |
 | **Réseau**                    | NAT (ou Bridge si tu veux SSH depuis ta machine hôte)                      |
 
+
+Pour copier de ma debian graphical a ma machine hote:
+
+1_ j'ai lance ssh_config.sh dans la vm
+
+2_ Dans network setting
+ajouter une rege NAT
+SSH TCP 127.0.0.1 ; Host port = 4242;  guest ip = la commande renvoye par la commande ip a; guest port = 4242
+
+scp -P 4242 radandri@127.0.0.1:/home/radandri/b2br/debian-preseeded.iso .
+
