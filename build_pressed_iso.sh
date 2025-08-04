@@ -6,31 +6,37 @@ sudo apt install wget genisoimage isolinux -y
 # Variables
 ISO_URL="https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.5.0-amd64-netinst.iso"
 ISO_NAME="debian.iso"
-ISO_DIR="$HOME/iso_build"
+ISO_DIR="/mnt"
 EXTRACTED_DIR="$ISO_DIR/iso"
-PRESEED_FILE="$HOME/preseed.cfg"
+PRESSED_LINK="https://github.com/rkajy/b2br/blob/main/preseed.cfg"
+PRESEED_FILE="preseed.cfg"
 OUTPUT_ISO="debian-preseeded.iso"
+ISO_EXTRACTED="extracted_iso/"
 
 # 1. Préparation
-mkdir -p "$EXTRACTED_DIR"
-cd "$ISO_DIR" || exit
+sudo mkdir -p "$EXTRACTED_DIR"
 
 # 2. Télécharger l'ISO officielle
 echo "==> Téléchargement de l’ISO officielle Debian..."
 wget -O "$ISO_NAME" "$ISO_URL"
 
+# 2. Télécharger le fichier preseed.cfg
+echo "==> Téléchargement du fichier preseed..."
+wget -O "$PRESEED_FILE" "$PRESSED_LINK"
+
+
 # 3. Monter l'ISO
 echo "==> Montage de l’ISO..."
-sudo mount -o loop "$ISO_NAME" /mnt
+sudo mount -o loop "debian.iso" "$EXTRACTED_DIR"
 
 # 4. Copier le contenu de l’ISO
 echo "==> Copie du contenu ISO vers $EXTRACTED_DIR..."
-cp -rT /mnt "$EXTRACTED_DIR"
-sudo umount /mnt
+sudo cp -r "$EXTRACTED_DIR" "extracted_iso/"
+sudo umount "$EXTRACTED_DIR"
 
 # 5. Ajouter le fichier preseed.cfg
 echo "==> Ajout du fichier preseed.cfg..."
-cp "$PRESEED_FILE" "$EXTRACTED_DIR"
+sudo cp "$PRESEED_FILE" "$ISO_EXTRACTED"
 
 # 6. Modifier isolinux
 echo "==> Modification du fichier isolinux/txt.cfg..."
