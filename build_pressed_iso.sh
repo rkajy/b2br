@@ -27,16 +27,16 @@ sudo mount -o loop "$ISO_NAME" "$MOUNT_DIR"
 echo "==> [5/8] Copie du contenu de l’ISO dans le répertoire de travail..."
 cp -rT "$MOUNT_DIR" "$EXTRACTED_ISO_DIR"
 sudo umount "$MOUNT_DIR"
-rm -rf "$MOUNT_DIR"
+sudo rm -rf "$MOUNT_DIR"
 
 echo "==> [6/8] Ajout de preseed.cfg dans l’ISO..."
 cp "$PRESEED_PATH" "$EXTRACTED_ISO_DIR/"
 
 echo "==> [7/8] Modification de isolinux/txt.cfg pour démarrer automatiquement avec preseed..."
-sed -i '/label install/,/append/ s@append.*@append auto=true priority=critical preseed/file=/cdrom/preseed.cfg vga=788 initrd=/install.amd/initrd.gz --- quiet@' "$EXTRACTED_ISO_DIR/isolinux/txt.cfg"
+sudo sed -i '/label install/,/append/ s@append.*@append auto=true priority=critical preseed/file=/cdrom/preseed.cfg vga=788 initrd=/install.amd/initrd.gz --- quiet@' "$EXTRACTED_ISO_DIR/isolinux/txt.cfg"
 
 echo "==> [8/8] Génération de l’ISO personnalisée..."
-genisoimage -o "$OUTPUT_ISO" \
+sudo genisoimage -o "$OUTPUT_ISO" \
   -r -J -no-emul-boot -boot-load-size 4 -boot-info-table \
   -b isolinux/isolinux.bin \
   -c isolinux/boot.cat \
