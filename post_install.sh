@@ -16,129 +16,90 @@
 
 #!/bin/bash
 
+
 set -e
 
-### === INSTALLATION DE BASE === ###
-echo "[0/10] Vérification de sudo..."
-if ! command -v sudo &>/dev/null; then
-  echo "⚠️ sudo non installé. Installation en cours..."
-  apt update && apt install -y sudo
-fi
 
-### === OPTIONS ENTRÉES === ###
-SKIP_SSH=false
-FORCE_SSH=false
+### === SSH === ###
+echo "[8/10] Gestion du SSH..."
+echo "Configuration de SSH..."
+#create a backup before updating file
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+#change Port 22 to Port 4242
+#set PermitRootLogin to no
+#don't forget to uncomment both lines after making changes
+sudo sed -i 's/#Port 22/Port 4242/' /etc/ssh/sshd_config
+sudo sed -i 's/Port 22/Port 4242/' /etc/ssh/sshd_config
+sudo sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+sudo sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+sudo systemctl enable ssh
+sudo systemctl restart ssh # once done, restart SSH server
+echo "SSH configuré sur le port 4242 (root interdit)"
 
-for arg in "$@"; do
-  case $arg in
-    --skip-ssh)
-      SKIP_SSH=true
-      shift
-      ;;
-    --force-ssh)
-      FORCE_SSH=true
-      shift
-      ;;
-  esac
-done
+USERNAME="radandri"
+HOSTNAME="radandri42"
+GROUPNAME="radandri42"
 
-### === DEMANDER LE LOGIN === ###
-read -p "Entrez votre login de 42 (ex: radandri) : " LOGIN
-USERNAME="$LOGIN"
-HOSTNAME="${LOGIN}42"
-GROUPNAME="${LOGIN}42"
-
-echo "[1/10] Création de l'utilisateur $USERNAME si nécessaire..."
-if id "$USERNAME" &>/dev/null; then
-  echo "Utilisateur $USERNAME déjà présent."
-else
-  adduser --disabled-password --gecos "" "$USERNAME"
-  echo "Veuillez entrer un mot de passe pour $USERNAME :"
-  passwd "$USERNAME"
-fi
 
 echo "[2/10] Attribution des groupes..."
-groupadd -f "$GROUPNAME"
-usermod -aG sudo "$USERNAME"
-usermod -aG "$GROUPNAME" "$USERNAME"
+sudo groupadd -f "$GROUPNAME"
+sudo usermod -aG sudo "$USERNAME"
+sudo usermod -aG "$GROUPNAME" "$USERNAME"
 
 echo "[3/10] Configuration du hostname..."
 if [ "$(hostname)" != "$HOSTNAME" ]; then
-  cp /etc/hostname /etc/hostname.backup
-  echo "$HOSTNAME" > /etc/hostname
-  hostnamectl set-hostname "$HOSTNAME"
+  sudo cp /etc/hostname /etc/hostname.backup
+  sudo echo "$HOSTNAME" > /etc/hostname
+  sudo hostnamectl set-hostname "$HOSTNAME"
   echo "Hostname mis à jour."
 else
   echo "Hostname déjà correct."
 fi
 
-echo "[4/10] Politique de mot de passe (PAM + chage)..."
-cp /etc/pam.d/common-password /etc/pam.d/common-password.backup
+echo "[1/10] Politique de mot de passe (PAM + chage)..."
+sudo cp /etc/pam.d/common-password /etc/pam.d/common-password.backup
 grep -q "pam_pwquality.so" /etc/pam.d/common-password || {
-
-  echo "password requisite pam_pwquality.so retry=3 minlen=10 ucredit=-1 lcredit=-1 dcredit=-1 maxrepeat=3 reject_username difok=7 enforce_for_root" >> /etc/pam.d/common-password
+  sudo echo "password requisite pam_pwquality.so retry=3 minlen=10 ucredit=-1 lcredit=-1 dcredit=-1 maxrepeat=3 reject_username difok=7 enforce_for_root" >> /etc/pam.d/common-password
 }
 #change age => chage, use to manage user password expiry and account aging information.
 # -M : set maximum number of days before password change to MAX_DAYS
 # -m : set minimum number of days before password change to MIN_DAYS
 # -W : set expiration warning days to WARN_DAYS
-chage -M 30 -m 2 -W 7 "$USERNAME" #the password has to expire every 30 days, the minimum number of days allowed before the modification of a password will be set to 2
+sudo chage -M 30 -m 2 -W 7 "$USERNAME" #the password has to expire every 30 days, the minimum number of days allowed before the modification of a password will be set to 2
                                   #the user has to receive a warning message 7 days before their password expires
-chage -M 30 -m 2 -W 7 root
+sudo chage -M 30 -m 2 -W 7 root
 
 ### === PARAMÈTRES === ###
 SUDO_LOG_DIR="/var/log/sudo"
 
 echo "[5/10] Configuration sudo sécurisée..."
-mkdir -p "$SUDO_LOG_DIR"
-chmod 700 "$SUDO_LOG_DIR"
-touch /etc/sudoers.d/42sudo
+sudo mkdir -p "$SUDO_LOG_DIR"
+sudo chmod 700 "$SUDO_LOG_DIR"
+sudo touch /etc/sudoers.d/42sudo
 echo "$USERNAME ALL=(ALL:ALL) ALL" > /etc/sudoers.d/42sudo
-cp /etc/sudoers /etc/sudoers.backup
-grep -q "Defaults logfile=" /etc/sudoers || echo "Defaults logfile=\"$SUDO_LOG_DIR/sudo.log\"" >> /etc/sudoers
-grep -q 'Defaults log_input' /etc/sudoers || echo 'Defaults log_input' >> /etc/sudoers
-grep -q 'Defaults log_output' /etc/sudoers || echo 'Defaults log_output' >> /etc/sudoers
-grep -q 'Defaults iolog_dir=' /etc/sudoers || echo 'Defaults iolog_dir="/var/log/sudo"' >> /etc/sudoers
-grep -q "Defaults badpass_message=" /etc/sudoers || echo "Defaults badpass_message=\"Wrong password... Access Denied.\"" >> /etc/sudoers
-grep -q "Defaults passwd_tries=" /etc/sudoers || echo "Defaults passwd_tries=3" >> /etc/sudoers
-grep -q "Defaults requiretty" /etc/sudoers || echo "Defaults requiretty" >> /etc/sudoers
-grep -q "Defaults secure_path=" /etc/sudoers || echo 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"' >> /etc/sudoers
+sudo cp /etc/sudoers /etc/sudoers.backup
+sudo grep -q "Defaults logfile=" /etc/sudoers || echo "Defaults logfile=\"$SUDO_LOG_DIR/sudo.log\"" >> /etc/sudoers
+sudo grep -q 'Defaults log_input' /etc/sudoers || echo 'Defaults log_input' >> /etc/sudoers
+sudo grep -q 'Defaults log_output' /etc/sudoers || echo 'Defaults log_output' >> /etc/sudoers
+sudo grep -q 'Defaults iolog_dir=' /etc/sudoers || echo 'Defaults iolog_dir="/var/log/sudo"' >> /etc/sudoers
+sudo grep -q "Defaults badpass_message=" /etc/sudoers || echo "Defaults badpass_message=\"Wrong password... Access Denied.\"" >> /etc/sudoers
+sudo grep -q "Defaults passwd_tries=" /etc/sudoers || echo "Defaults passwd_tries=3" >> /etc/sudoers
+sudo grep -q "Defaults requiretty" /etc/sudoers || echo "Defaults requiretty" >> /etc/sudoers
+sudo grep -q "Defaults secure_path=" /etc/sudoers || echo 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"' >> /etc/sudoers
 
 echo "[6/10] AppArmor (sécurité)..."
-systemctl enable apparmor
-systemctl start apparmor
+sudo systemctl enable apparmor
+sudo systemctl start apparmor
 
 echo "[7/10] Configuration du pare-feu UFW..."
-apt install -y ufw #install the firewall
-ufw default deny incoming #blocks all incoming requests
-ufw default allow outgoing #allows all outgoing requests
-ufw allow 4242/tcp #allow incoming trafic on port 4242
-ufw --force enable #enable the firewall
+sudo apt install -y ufw #install the firewall
+sudo ufw default deny incoming #blocks all incoming requests
+sudo ufw default allow outgoing #allows all outgoing requests
+sudo ufw allow 4242/tcp #allow incoming trafic on port 4242
+sudo ufw --force enable #enable the firewall
 
-### === SSH === ###
-echo "[8/10] Gestion du SSH..."
-if $SKIP_SSH; then
-  echo "SSH ignoré (--skip-ssh activé)"
-else
-  if $FORCE_SSH || ! systemctl is-active ssh &>/dev/null; then
-    echo "Installation et configuration de SSH..."
-    apt install -y openssh-server #install ssh server
-    #create a backup before updating file
-    cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
-    #change Port 22 to Port 4242
-    #set PermitRootLogin to no
-    #don't forget to uncomment both lines after making changes
-    sed -i 's/#Port 22/Port 4242/' /etc/ssh/sshd_config
-    sed -i 's/Port 22/Port 4242/' /etc/ssh/sshd_config
-    sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-    sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-    systemctl enable ssh
-    systemctl restart ssh # once done, restart SSH server
-    echo "SSH configuré sur le port 4242 (root interdit)"
-  else
-    echo "SSH déjà actif, configuration ignorée (utilisez --force-ssh pour forcer)"
-  fi
-fi
+
+
 
 ### === PARAMÈTRES === ###
 MONITOR_SCRIPT="/usr/local/bin/monitoring.sh"
