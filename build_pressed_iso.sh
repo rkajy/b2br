@@ -3,7 +3,7 @@
 set -e
 
 # ==================== CONFIG ====================
-ISO_URL="https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.5.0-amd64-netinst.iso"
+ISO_URL="https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.11.0-amd64-netinst.iso"
 ISO_NAME="debian.iso"
 OUTPUT_ISO="debian-preseeded.iso"
 WORKDIR="$(pwd)"
