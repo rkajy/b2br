@@ -49,7 +49,7 @@ sudo usermod -aG "$GROUPNAME" "$USERNAME"
 echo "[3/10] Configuration du hostname..."
 if [ "$(hostname)" != "$HOSTNAME" ]; then
   sudo cp /etc/hostname /etc/hostname.backup
-  sudo echo "$HOSTNAME" > /etc/hostname
+  echo "$HOSTNAME" | sudo tee /etc/hostname > /dev/null
   sudo hostnamectl set-hostname "$HOSTNAME"
   echo "Hostname mis à jour."
 else
