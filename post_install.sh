@@ -42,14 +42,15 @@ HOSTNAME="radandri42"
 GROUPNAME="radandri42"
 
 echo "[2/10] Attribution des groupes..."
-sudo groupadd -f "$GROUPNAME"
-sudo usermod -aG sudo "$USERNAME"
+sudo groupadd -f "$GROUPNAME" #create a group if needed
+sudo usermod -aG sudo "$USERNAME" #assign username to sudo group
 sudo usermod -aG "$GROUPNAME" "$USERNAME"
+sudo usermod -aG "$USERNAME" "$GROUPNAME"
 
 echo "[3/10] Configuration du hostname..."
 if [ "$(hostname)" != "$HOSTNAME" ]; then
   sudo cp /etc/hostname /etc/hostname.backup
-  echo "$HOSTNAME" | sudo tee /etc/hostname > /dev/null
+  echo "$HOSTNAME" | sudo tee /etc/hostname > /dev/null #change hostname
   sudo hostnamectl set-hostname "$HOSTNAME"
   echo "Hostname mis à jour."
 else
@@ -156,7 +157,8 @@ EOM
 EOF
 #wall : write a message to all users
 chmod +x "$MONITOR_SCRIPT"
-(crontab -l 2>/dev/null | grep -v "$MONITOR_SCRIPT" ; echo "*/10 * * * * $MONITOR_SCRIPT") | crontab -
+#Add cron and run it when the system reboot
+(crontab -l 2>/dev/null | grep -v "$MONITOR_SCRIPT" ; echo "*/10 * * * * $MONITOR_SCRIPT") | sudo crontab -
 
 echo "Installation done !"
 
