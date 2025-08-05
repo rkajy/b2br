@@ -57,6 +57,9 @@ else
   echo "Hostname déjà correct."
 fi
 
+echo "127.0.1.1     radandri" >> etc/hosts
+sudo hostnamectl set-hostname $HOSTNAME
+
 echo "[1/10] Politique de mot de passe (PAM + chage)..."
 sudo cp /etc/pam.d/common-password /etc/pam.d/common-password.backup
 grep -q "pam_pwquality.so" /etc/pam.d/common-password || {
