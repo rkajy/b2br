@@ -19,22 +19,22 @@
 set -e
 
 #Install the requirements
-sudo apt install -y sudo ufw openssh-server apparmor libpam-pwquality
+apt install -y sudo ufw openssh-server apparmor libpam-pwquality
 
 ### === SSH === ###
 echo "[8/10] Gestion du SSH..."
 echo "Configuration de SSH..."
 #create a backup before updating file
-sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
 #change Port 22 to Port 4242
 #set PermitRootLogin to no
 #don't forget to uncomment both lines after making changes
-sudo sed -i 's/#Port 22/Port 4242/' /etc/ssh/sshd_config
-sudo sed -i 's/Port 22/Port 4242/' /etc/ssh/sshd_config
-sudo sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-sudo sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-sudo systemctl enable ssh
-sudo systemctl restart ssh # once done, restart SSH server
+sed -i 's/#Port 22/Port 4242/' /etc/ssh/sshd_config
+sed -i 's/Port 22/Port 4242/' /etc/ssh/sshd_config
+sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+systemctl enable ssh
+systemctl restart ssh # once done, restart SSH server
 echo "SSH configuré sur le port 4242 (root interdit)"
 
 USERNAME="radandri"
@@ -42,73 +42,72 @@ HOSTNAME="radandri42"
 GROUPNAME="radandri42"
 
 echo "[2/10] Attribution des groupes..."
-sudo groupadd -f "$GROUPNAME" #create a group if needed
-sudo usermod -aG sudo "$USERNAME" #assign username to sudo group
-sudo usermod -aG "$GROUPNAME" "$USERNAME"
-sudo usermod -aG "$USERNAME" "$GROUPNAME"
+groupadd -f "$GROUPNAME" #create a group if needed
+usermod -aG sudo "$USERNAME" #assign username to sudo group
+usermod -aG "$GROUPNAME" "$USERNAME"
+usermod -aG "$USERNAME" "$GROUPNAME"
 
 echo "[3/10] Configuration du hostname..."
 if [ "$(hostname)" != "$HOSTNAME" ]; then
-  sudo cp /etc/hostname /etc/hostname.backup
+  cp /etc/hostname /etc/hostname.backup
   echo "$HOSTNAME" | sudo tee /etc/hostname > /dev/null #change hostname
-  sudo hostnamectl set-hostname "$HOSTNAME"
+  hostnamectl set-hostname "$HOSTNAME"
   echo "Hostname mis à jour."
 else
   echo "Hostname déjà correct."
 fi
 
 echo "127.0.1.1     radandri" >> etc/hosts
-sudo hostnamectl set-hostname $HOSTNAME
+hostnamectl set-hostname $HOSTNAME
 
 echo "[1/10] Politique de mot de passe (PAM + chage)..."
-sudo cp /etc/pam.d/common-password /etc/pam.d/common-password.backup
+cp /etc/pam.d/common-password /etc/pam.d/common-password.backup
 grep -q "pam_pwquality.so" /etc/pam.d/common-password || {
-  sudo echo "password requisite pam_pwquality.so retry=3 minlen=10 ucredit=-1 lcredit=-1 dcredit=-1 maxrepeat=3 reject_username difok=7 enforce_for_root" >> /etc/pam.d/common-password
+  echo "password requisite pam_pwquality.so retry=3 minlen=10 ucredit=-1 lcredit=-1 dcredit=-1 maxrepeat=3 reject_username difok=7 enforce_for_root" >> /etc/pam.d/common-password
 }
 #change age => chage, use to manage user password expiry and account aging information.
 # -M : set maximum number of days before password change to MAX_DAYS
 # -m : set minimum number of days before password change to MIN_DAYS
 # -W : set expiration warning days to WARN_DAYS
-sudo chage -M 30 -m 2 -W 7 "$USERNAME" #the password has to expire every 30 days, the minimum number of days allowed before the modification of a password will be set to 2
+chage -M 30 -m 2 -W 7 "$USERNAME" #the password has to expire every 30 days, the minimum number of days allowed before the modification of a password will be set to 2
                                   #the user has to receive a warning message 7 days before their password expires
-sudo chage -M 30 -m 2 -W 7 root
+chage -M 30 -m 2 -W 7 root
 
 ### === PARAMÈTRES === ###
 SUDO_LOG_DIR="/var/log/sudo"
 
 echo "[5/10] Configuration sudo sécurisée..."
-sudo mkdir -p "$SUDO_LOG_DIR"
-sudo chmod 700 "$SUDO_LOG_DIR"
-sudo touch /etc/sudoers.d/42sudo
+mkdir -p "$SUDO_LOG_DIR"
+chmod 700 "$SUDO_LOG_DIR"
+touch /etc/sudoers.d/42sudo
 echo "$USERNAME ALL=(ALL:ALL) ALL" > /etc/sudoers.d/42sudo
-sudo cp /etc/sudoers /etc/sudoers.backup
-sudo grep -q "Defaults logfile=" /etc/sudoers || echo "Defaults logfile=\"$SUDO_LOG_DIR/sudo.log\"" >> /etc/sudoers
-sudo grep -q 'Defaults log_input' /etc/sudoers || echo 'Defaults log_input' >> /etc/sudoers
-sudo grep -q 'Defaults log_output' /etc/sudoers || echo 'Defaults log_output' >> /etc/sudoers
-sudo grep -q 'Defaults iolog_dir=' /etc/sudoers || echo 'Defaults iolog_dir="/var/log/sudo"' >> /etc/sudoers
-sudo grep -q "Defaults badpass_message=" /etc/sudoers || echo "Defaults badpass_message=\"Wrong password... Access Denied.\"" >> /etc/sudoers
-sudo grep -q "Defaults passwd_tries=" /etc/sudoers || echo "Defaults passwd_tries=3" >> /etc/sudoers
-sudo grep -q "Defaults requiretty" /etc/sudoers || echo "Defaults requiretty" >> /etc/sudoers
-sudo grep -q "Defaults secure_path=" /etc/sudoers || echo 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"' >> /etc/sudoers
+ cp /etc/sudoers /etc/sudoers.backup
+grep -q "Defaults logfile=" /etc/sudoers || echo "Defaults logfile=\"$SUDO_LOG_DIR/sudo.log\"" >> /etc/sudoers
+grep -q 'Defaults log_input' /etc/sudoers || echo 'Defaults log_input' >> /etc/sudoers
+grep -q 'Defaults log_output' /etc/sudoers || echo 'Defaults log_output' >> /etc/sudoers
+grep -q 'Defaults iolog_dir=' /etc/sudoers || echo 'Defaults iolog_dir="/var/log/sudo"' >> /etc/sudoers
+grep -q "Defaults badpass_message=" /etc/sudoers || echo "Defaults badpass_message=\"Wrong password... Access Denied.\"" >> /etc/sudoers
+grep -q "Defaults passwd_tries=" /etc/sudoers || echo "Defaults passwd_tries=3" >> /etc/sudoers
+grep -q "Defaults requiretty" /etc/sudoers || echo "Defaults requiretty" >> /etc/sudoers
+grep -q "Defaults secure_path=" /etc/sudoers || echo 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"' >> /etc/sudoers
 
 
 
 echo "[6/10] AppArmor (sécurité)..."
-sudo systemctl enable apparmor
-sudo systemctl start apparmor
+systemctl enable apparmor
+systemctl start apparmor
 
 echo "[7/10] Configuration du pare-feu UFW..."
-sudo apt install -y ufw #install the firewall
-sudo ufw default deny incoming #blocks all incoming requests
-sudo ufw default allow outgoing #allows all outgoing requests
-sudo ufw allow 4242/tcp #allow incoming trafic on port 4242
-sudo ufw --force enable #enable the firewall
+ufw default deny incoming #blocks all incoming requests
+ufw default allow outgoing #allows all outgoing requests
+ufw allow 4242/tcp #allow incoming trafic on port 4242
+ufw --force enable #enable the firewall
 
 
 
 
 ### === PARAMÈTRES === ###
-MONITOR_SCRIPT="/usr/local/bin/monitoring.sh"
+MONITOR_SCRIPT="$HOME/monitoring.sh"
 
 echo "[9/10] Déploiement du script monitoring.sh..."
 # The architecture of your operating system and its kernel version
@@ -165,8 +164,8 @@ chmod +x "$MONITOR_SCRIPT"
 
 echo "Installation done !"
 
-echo "Don't forget to add in Network setting on virtualbox a rule SSH with : protocole: TCP, Host port: 2222, Guest port: 4242"
+#echo "Don't forget to add in Network setting on virtualbox a rule SSH with : protocole: TCP, Host port: 2222, Guest port: 4242"
 
-echo "To connect with ssh, type : ssh radandri42@127.0.0.1 -p 2222"
+#echo "To connect with ssh, type : ssh radandri42@127.0.0.1 -p 2222"
 
-echo "To copy file type for example : scp -P 2222 born2beroot.sh radandri42@127.0.0.1:/home/radandri42/"
+#echo "To copy file type for example : scp -P 2222 born2beroot.sh radandri42@127.0.0.1:/home/radandri42/"
