@@ -10,6 +10,7 @@ WORKDIR="$(pwd)"
 EXTRACTED_ISO_DIR="$WORKDIR/extracted_iso"
 MOUNT_DIR="$WORKDIR/mount_iso"
 PRESEED_PATH="$WORKDIR/preseed.cfg"
+POST_INSTALL_PATH="$WORKDIR/post_install.sh"
 # ================================================
 
 echo "==> [1/8] Installation des outils requis..."
@@ -38,8 +39,10 @@ cp -rT "$MOUNT_DIR" "$EXTRACTED_ISO_DIR"
 sudo umount "$MOUNT_DIR"
 sudo rm -rf "$MOUNT_DIR"
 
-echo "==> [6/8] Ajout de preseed.cfg dans l’ISO..."
-cp "$PRESEED_PATH" "$EXTRACTED_ISO_DIR/"
+echo "==> [6/8] Ajout de preseed.cfg et du script post_install.sh dans l’ISO..."
+sudo cp "$PRESEED_PATH" "$EXTRACTED_ISO_DIR/"
+sudo cp "$POST_INSTALL_PATH" "$EXTRACTED_ISO_DIR/"
+
 
 echo "==> [7/8] Modification de isolinux/txt.cfg pour démarrer automatiquement avec preseed..."
 sudo sed -i '/label install/,/append/ s@append.*@append auto=true priority=critical preseed/file=/cdrom/preseed.cfg vga=788 initrd=/install.amd/initrd.gz langage=en country=DE locale=en_US.UTF-8 --- quiet@' "$EXTRACTED_ISO_DIR/isolinux/txt.cfg"
