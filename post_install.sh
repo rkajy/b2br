@@ -1,38 +1,29 @@
-# REQUIREMENTS:
-# Download the LTS (Latest Stable Version) version of debian
-# Create at least 2 encrypted partitions using LVM
-# Why I choose Debian ?
-# Differences betwen aptitude and apt
-# What SELinux or AppArmor is ?
-# SSH service will be running on the mandatory port 4242
-# It must not possible to connect using SSH as root because of security reasons
-# Configure firewall UFW and thus leave only port 4242 open in your virtual machine, it must be active when you launch your virtual machine
-# Be able to modify the hostname 
-# Implement a strong password policy, what chage command is ?
-# Install and configure sudo following strict rules
-# In addition to the root user, a user with your login as username has to be present
-# This user has to belong to the user42 and sudo group
-# To be able to create a new user and assign it to a group
-
 #!/bin/bash
 
 set -e
 
 #Install the requirements
-apt install -y sudo ufw openssh-server apparmor libpam-pwquality
+apt install -y sudo ufw openssh-server libpam-pwquality
+
+#echo "127.0.1.1     radandri" >> etc/hosts
+#hostnamectl set-hostname $HOSTNAME
+
 
 ### === SSH === ###
 echo "[8/10] Gestion du SSH..."
 echo "Configuration de SSH..."
 #create a backup before updating file
 cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+cp /etc/ssh/ssh_config /etc/ssh/ssh_config.backup
 #change Port 22 to Port 4242
 #set PermitRootLogin to no
 #don't forget to uncomment both lines after making changes
-sed -i 's/#Port 22/Port 4242/' /etc/ssh/sshd_config
-sed -i 's/Port 22/Port 4242/' /etc/ssh/sshd_config
+sed -i 's/#Port 22/Port 4242/' /etc/ssh/ssh_config
+sed -i 's/Port 22/Port 4242/' /etc/ssh/ssh_config
 sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
 sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
+sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
 systemctl enable ssh
 systemctl restart ssh # once done, restart SSH server
 echo "SSH configuré sur le port 4242 (root interdit)"
@@ -41,70 +32,51 @@ USERNAME="radandri"
 HOSTNAME="radandri42"
 GROUPNAME="radandri42"
 
-echo "[2/10] Attribution des groupes..."
-groupadd -f "$GROUPNAME" #create a group if needed
-usermod -aG sudo "$USERNAME" #assign username to sudo group
-usermod -aG "$GROUPNAME" "$USERNAME"
-usermod -aG "$USERNAME" "$GROUPNAME"
+#create a group called user42
+addgroup user42
+adduser radandri sudo #add sudo group to radandri users
+adduser radandri user42
 
-echo "[3/10] Configuration du hostname..."
-if [ "$(hostname)" != "$HOSTNAME" ]; then
-  cp /etc/hostname /etc/hostname.backup
-  echo "$HOSTNAME" | sudo tee /etc/hostname > /dev/null #change hostname
-  hostnamectl set-hostname "$HOSTNAME"
-  echo "Hostname mis à jour."
-else
-  echo "Hostname déjà correct."
-fi
+# echo "[2/10] Attribution des groupes..."
+# groupadd -f "$GROUPNAME" #create a group if needed
+# usermod -aG sudo "$USERNAME" #assign username to sudo group
+# usermod -aG "$GROUPNAME" "$USERNAME"
+# usermod -aG "$USERNAME" "$GROUPNAME"
 
-echo "127.0.1.1     radandri" >> etc/hosts
-hostnamectl set-hostname $HOSTNAME
-
-echo "[1/10] Politique de mot de passe (PAM + chage)..."
-cp /etc/pam.d/common-password /etc/pam.d/common-password.backup
-grep -q "pam_pwquality.so" /etc/pam.d/common-password || {
-  echo "password requisite pam_pwquality.so retry=3 minlen=10 ucredit=-1 lcredit=-1 dcredit=-1 maxrepeat=3 reject_username difok=7 enforce_for_root" >> /etc/pam.d/common-password
-}
 #change age => chage, use to manage user password expiry and account aging information.
 # -M : set maximum number of days before password change to MAX_DAYS
 # -m : set minimum number of days before password change to MIN_DAYS
 # -W : set expiration warning days to WARN_DAYS
-chage -M 30 -m 2 -W 7 "$USERNAME" #the password has to expire every 30 days, the minimum number of days allowed before the modification of a password will be set to 2
+#chage -M 30 -m 2 -W 7 "$USERNAME" #the password has to expire every 30 days, the minimum number of days allowed before the modification of a password will be set to 2
                                   #the user has to receive a warning message 7 days before their password expires
-chage -M 30 -m 2 -W 7 root
+#chage -M 30 -m 2 -W 7 root
 
-### === PARAMÈTRES === ###
-SUDO_LOG_DIR="/var/log/sudo"
-
-echo "[5/10] Configuration sudo sécurisée..."
-mkdir -p "$SUDO_LOG_DIR"
-chmod 700 "$SUDO_LOG_DIR"
-touch /etc/sudoers.d/42sudo
-echo "$USERNAME ALL=(ALL:ALL) ALL" > /etc/sudoers.d/42sudo
- cp /etc/sudoers /etc/sudoers.backup
-grep -q "Defaults logfile=" /etc/sudoers || echo "Defaults logfile=\"$SUDO_LOG_DIR/sudo.log\"" >> /etc/sudoers
-grep -q 'Defaults log_input' /etc/sudoers || echo 'Defaults log_input' >> /etc/sudoers
-grep -q 'Defaults log_output' /etc/sudoers || echo 'Defaults log_output' >> /etc/sudoers
-grep -q 'Defaults iolog_dir=' /etc/sudoers || echo 'Defaults iolog_dir="/var/log/sudo"' >> /etc/sudoers
-grep -q "Defaults badpass_message=" /etc/sudoers || echo "Defaults badpass_message=\"Wrong password... Access Denied.\"" >> /etc/sudoers
-grep -q "Defaults passwd_tries=" /etc/sudoers || echo "Defaults passwd_tries=3" >> /etc/sudoers
-grep -q "Defaults requiretty" /etc/sudoers || echo "Defaults requiretty" >> /etc/sudoers
-grep -q "Defaults secure_path=" /etc/sudoers || echo 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"' >> /etc/sudoers
-
-
-
-echo "[6/10] AppArmor (sécurité)..."
-systemctl enable apparmor
-systemctl start apparmor
 
 echo "[7/10] Configuration du pare-feu UFW..."
-ufw default deny incoming #blocks all incoming requests
-ufw default allow outgoing #allows all outgoing requests
-ufw allow 4242/tcp #allow incoming trafic on port 4242
 ufw --force enable #enable the firewall
+ufw allow 4242 #allow incoming trafic on port 4242
+#ufw default deny incoming #blocks all incoming requests
+#ufw default allow outgoing #allows all outgoing requests
 
+touch /etc/sudoers.d/sudo_config
+mkdir -p /var/log/sudo
 
+cat << 'EOF' > /etc/sudoers.d/sudo_config
+Defaults  passwd_tries=3
+Defaults  badpass_message="Message d'erreur personnalisee"
+Defaults  logfile="/var/log/sudo/sudo_config"
+Defaults  log_input, log_output
+Defaults  iolog_dir=/var/log/sudo"
+Defaults  requiretty
+Defaults  secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
+EOF
 
+cp /etc/login.defs /etc/login.defs.backup
+sed -i 's/PASS_MAX_DAYS 99999/PASS_MAX_DAYS 30/' /etc/login.defs
+sed -i 's/PASS_MIN_DAYS 0/PASS_MIN_DAYS 2/' /etc/login.defs
+echo "[1/10] Politique de mot de passe (PAM + chage)..."
+cp /etc/pam.d/common-password /etc/pam.d/common-password.backup
+sed -i 's/pam-pwquality.so rety=3/pam-pwquality.so retry=3 minlen=10 ucredit=-1 dcredit=-1 lcredit=-1 maxrepeat=3 reject_username difok=7 enforce_for_root/' /etc/pam.d/common-password
 
 ### === PARAMÈTRES === ###
 MONITOR_SCRIPT="$HOME/monitoring.sh"
