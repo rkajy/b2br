@@ -48,13 +48,8 @@ sudo cp "$POST_INSTALL_PATH" "$EXTRACTED_ISO_DIR/"
 
 
 echo "==> [7/8] Modification de isolinux/txt.cfg pour démarrer automatiquement avec preseed..."
-cat >> "$EXTRACTED_ISO_DIR/isolinux/txt.cfg" <<EOF
+sudo sed -i '/label install/,/append/ s@append.*@append auto=true priority=critical preseed/file=/cdrom/preseed.cfg vga=788 initrd=/install.amd/initrd.gz langage=en country=DE locale=en_US.UTF-8 --- quiet@' "$EXTRACTED_ISO_DIR/isolinux/txt.cfg"
 
-label autoinstall
-    menu label ^Automated Install (preseed)
-    kernel /install.amd/vmlinuz
-    append auto=true priority=critical preseed/file=/cdrom/preseed.cfg vga=788 initrd=/install.amd/initrd.gz language=en country=DE locale=en_US.UTF-8 quiet
-EOF
 echo "==> [8/8] Génération de l’ISO personnalisée..."
 sudo genisoimage -o "$OUTPUT_ISO" \
   -r -J -no-emul-boot -boot-load-size 4 -boot-info-table \
