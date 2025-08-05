@@ -33,3 +33,71 @@ SSH TCP 127.0.0.1 ; Host port = 4242;  guest ip = la commande renvoye par la com
 
 scp -P 4242 radandri@127.0.0.1:/home/radandri/b2br/debian-preseeded.iso .
 
+
+# Born2beroot – Projet 42
+
+Ce projet consiste à sécuriser une machine virtuelle Debian 11 ou 12 en respectant des règles de cybersécurité : configuration système, gestion des utilisateurs, pare-feu, monitoring, etc.
+
+## 🖥️ Configuration de la VM
+
+- **Nom de la machine (hostname)** : `debian42`
+- **Utilisateur principal** : `radandri42`
+- **Mot de passe** : `password42`
+- **Accès root SSH** : Interdit
+- **Port SSH** : `4242`
+- **UFW (pare-feu)** : Activé, port 4242 autorisé
+- **Partition disque** : LVM + chiffrement (LUKS)
+- **AppArmor** : Activé
+
+## 🔐 Sécurité
+
+- **Politique de mot de passe** :  
+  - Longueur min : 10 caractères  
+  - Au moins 1 majuscule, 1 minuscule, 1 chiffre  
+  - Pas plus de 3 répétitions  
+  - 7 différences avec l'ancien mot de passe  
+- **Expiration des mots de passe** :  
+  - Tous les 30 jours  
+  - Avertissement 7 jours avant expiration
+
+## 👥 Groupes utilisateurs
+
+- `radandri42` appartient à : `sudo`, `user42`
+- `user42` est un groupe personnalisé
+
+## ⚠️ Sudo
+
+- Le fichier `/etc/sudoers` inclut :
+  - `Defaults logfile="/var/log/sudo"`
+- Tous les accès sudo sont journalisés.
+
+## 📊 Monitoring
+
+- Script : `/usr/local/bin/monitoring.sh`
+- Affiche automatiquement les infos système à chaque redémarrage via `cron`
+- Infos affichées :
+  - Architecture système
+  - Nombre de CPU / vCPU
+  - RAM utilisée / totale
+  - Utilisation disque
+  - Charge CPU
+  - Date du dernier boot
+  - Utilisation LVM
+  - Connexions TCP établies
+  - Nombre d'utilisateurs connectés
+  - Adresse IP et MAC
+  - Nombre de commandes `sudo` exécutées
+
+## ⚙️ Services au boot
+
+- AppArmor : actif
+- Monitoring via cron (`@reboot`)
+- SSH : activé (port 4242)
+
+## 📁 Script utilisé
+
+Script post-installation disponible ici :  
+📎 [`post_install.sh`](https://github.com/rkajy/b2br/blob/main/post_install.sh)
+
+Il est automatiquement lancé à la fin de l’installation via le fichier `preseed.cfg`.
+
