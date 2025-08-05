@@ -13,6 +13,9 @@ PRESEED_PATH="$WORKDIR/preseed.cfg"
 POST_INSTALL_PATH="$WORKDIR/post_install.sh"
 # ================================================
 
+#supprimer l'ancien et reconstruire
+rm -rf "$EXTRACTED_ISO_DIR"
+
 echo "==> [1/8] Installation des outils requis..."
 sudo apt update && sudo apt install -y wget genisoimage isolinux
 
@@ -68,3 +71,7 @@ else
     echo "❌ Échec lors de la génération de l’ISO."
     exit 1
 fi
+
+echo "Command to get new iso files preseed"
+
+echo "scp -P 4242 radandri@127.0.0.1:/home/radandri/b2br/debian-preseeded.iso ."

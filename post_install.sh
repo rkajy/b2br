@@ -16,9 +16,10 @@
 
 #!/bin/bash
 
-
 set -e
 
+#Install the requirements
+sudo apt install -y sudo ufw openssh-server apparmor libpam-pwquality
 
 ### === SSH === ###
 echo "[8/10] Gestion du SSH..."
@@ -39,7 +40,6 @@ echo "SSH configuré sur le port 4242 (root interdit)"
 USERNAME="radandri"
 HOSTNAME="radandri42"
 GROUPNAME="radandri42"
-
 
 echo "[2/10] Attribution des groupes..."
 sudo groupadd -f "$GROUPNAME"
@@ -86,6 +86,8 @@ sudo grep -q "Defaults badpass_message=" /etc/sudoers || echo "Defaults badpass_
 sudo grep -q "Defaults passwd_tries=" /etc/sudoers || echo "Defaults passwd_tries=3" >> /etc/sudoers
 sudo grep -q "Defaults requiretty" /etc/sudoers || echo "Defaults requiretty" >> /etc/sudoers
 sudo grep -q "Defaults secure_path=" /etc/sudoers || echo 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"' >> /etc/sudoers
+
+
 
 echo "[6/10] AppArmor (sécurité)..."
 sudo systemctl enable apparmor
