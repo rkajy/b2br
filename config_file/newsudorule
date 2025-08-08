@@ -10,5 +10,7 @@ Defaults log_input, log_output
 Defaults iolog_dir=/var/log/sudo
 # Requires TTY to use sudo
 Defaults requiretty
+# Require TTY for interactive users, but disable for scripts and automation
+Defaults!ALL !requiretty
 # Limits the paths that can be used by sudo to run commands. This setting is already there and you can leave it as it is.
 Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"

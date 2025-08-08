@@ -1,27 +1,60 @@
 #!/bin/bash
 
-set -e
 
-### === SSH === ###
-echo "Configuration de SSH..."
-#create a backup before updating file
-cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+CONFIG_DIR="/cdrom/config_file"
+USER_HOME="/home/radandri"
+CONFIG_DIR="/cdrom/config_file"
 
-cp /etc/ssh/ssh_config /etc/ssh/ssh_config.backup
+cp "$CONFIG_DIR/newsudorule" "/etc/sudoers.d/newsudorule"
+chmod 440 /etc/sudoers.d/newsudorule
 
+visudo -c -f /etc/sudoers.d/newsudorule
+
+# Fonction de remplacement sécurisé
+replace_file() {
+    local src="$1"   # Fichier .expected sur l'ISO
+    local dest="$2"  # Fichier de destination dans le système
+
+    if [ -f "$src" ]; then
+        if [ -f "$dest" ]; then
+            echo "[INFO] Sauvegarde de $dest → ${dest}.backup"
+            cp "$dest" "${dest}.backup"
+        else
+            echo "[WARN] $dest introuvable, pas de sauvegarde."
+        fi
+
+        echo "[INFO] Remplacement de $dest par $src"
+        cp "$src" "$dest"
+    else
+        echo "[WARN] $src introuvable, remplacement ignoré."
+    fi
+}
+
+# 1. /etc/login.defs
+replace_file "$CONFIG_DIR/login.defs.expected" "/etc/login.defs"
+chmod 644 /etc/login.defs
+
+# 2. /etc/ssh/sshd_config
+replace_file "$CONFIG_DIR/sshd_config.expected" "/etc/ssh/sshd_config"
+chmod 600 /etc/ssh/sshd_config
+
+# 3. /etc/pam.d/common-password
+replace_file "$CONFIG_DIR/common-password.expected" "/etc/pam.d/common-password"
+chmod 644 /etc/pam.d/common-password
+
+# Configuration de l’expiration des mots de passe
 systemctl enable ssh
 systemctl restart ssh # once done, restart SSH server
-echo "SSH configuré sur le port 4242 (root interdit)"
 
 USERNAME="radandri"
 HOSTNAME="radandri42"
-GROUPNAME="radandri42"
 
 #create a group called user42
 addgroup user42
 adduser radandri sudo #add sudo group to radandri users
 adduser radandri user42
 
+echo "Configuration du pare-feu UFW..."
 #change age => chage, use to manage user password expiry and account aging information.
 # -M : set maximum number of days before password change to MAX_DAYS
 # -m : set minimum number of days before password change to MIN_DAYS
@@ -37,17 +70,10 @@ ufw allow 4242 #allow incoming trafic on port 4242
 #ufw default deny incoming #blocks all incoming requests
 #ufw default allow outgoing #allows all outgoing requests
 
-touch /etc/sudoers.d/sudo_config
-mkdir -p /var/log/sudo
-
-
-cp /etc/login.defs /etc/login.defs.backup
-
-
 ### === PARAMÈTRES === ###
 MONITOR_SCRIPT="$HOME/monitoring.sh"
 
-echo "[9/10] Déploiement du script monitoring.sh..."
+echo "Déploiement du script monitoring.sh..."
 # The architecture of your operating system and its kernel version
 # The number of physical processors
 # The number of virtual processors
@@ -98,12 +124,19 @@ EOF
 #wall : write a message to all users
 chmod +x "$MONITOR_SCRIPT"
 #Add cron and run it when the system reboot
-(crontab -l 2>/dev/null | grep -v "$MONITOR_SCRIPT" ; echo "*/10 * * * * $MONITOR_SCRIPT") | sudo crontab -
+(crontab -l 2>/dev/null | grep -v "$MONITOR_SCRIPT" ; echo "*/10 * * * * $MONITOR_SCRIPT") | crontab -
 
 echo "Installation done !"
 
-#echo "Don't forget to add in Network setting on virtualbox a rule SSH with : protocole: TCP, Host port: 2222, Guest port: 4242"
+# Copier post_install.sh dans home
+cp /cdrom/post_install.sh "$USER_HOME/"
 
-#echo "To connect with ssh, type : ssh radandri42@127.0.0.1 -p 2222"
+# Copier monitoring.sh dans home
+cp /cdrom/monitoring.sh "$USER_HOME/"
 
-#echo "To copy file type for example : scp -P 2222 born2beroot.sh radandri42@127.0.0.1:/home/radandri42/"
+# Copier tous les fichiers de config dans un dossier dédié dans home
+mkdir -p "$USER_HOME/config_file"
+cp -r "$CONFIG_DIR/"* "$USER_HOME/config_file/"
+
+# Ajuster la propriété à l'utilisateur (important !)
+chown -R radandri:radandri "$USER_HOME/post_install.sh" "$USER_HOME/monitoring.sh" "$USER_HOME/config_file"
