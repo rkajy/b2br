@@ -2,28 +2,13 @@
 
 set -e
 
-#Install the requirements
-apt install -y sudo ufw openssh-server libpam-pwquality
-
-#echo "127.0.1.1     radandri" >> etc/hosts
-#hostnamectl set-hostname $HOSTNAME
-
-
 ### === SSH === ###
-echo "[8/10] Gestion du SSH..."
 echo "Configuration de SSH..."
 #create a backup before updating file
 cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+
 cp /etc/ssh/ssh_config /etc/ssh/ssh_config.backup
-#change Port 22 to Port 4242
-#set PermitRootLogin to no
-#don't forget to uncomment both lines after making changes
-sed -i 's/#Port 22/Port 4242/' /etc/ssh/ssh_config
-sed -i 's/Port 22/Port 4242/' /etc/ssh/ssh_config
-sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
-sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
+
 systemctl enable ssh
 systemctl restart ssh # once done, restart SSH server
 echo "SSH configuré sur le port 4242 (root interdit)"
@@ -37,22 +22,16 @@ addgroup user42
 adduser radandri sudo #add sudo group to radandri users
 adduser radandri user42
 
-# echo "[2/10] Attribution des groupes..."
-# groupadd -f "$GROUPNAME" #create a group if needed
-# usermod -aG sudo "$USERNAME" #assign username to sudo group
-# usermod -aG "$GROUPNAME" "$USERNAME"
-# usermod -aG "$USERNAME" "$GROUPNAME"
-
 #change age => chage, use to manage user password expiry and account aging information.
 # -M : set maximum number of days before password change to MAX_DAYS
 # -m : set minimum number of days before password change to MIN_DAYS
 # -W : set expiration warning days to WARN_DAYS
-#chage -M 30 -m 2 -W 7 "$USERNAME" #the password has to expire every 30 days, the minimum number of days allowed before the modification of a password will be set to 2
+chage -M 30 -m 2 -W 7 "$USERNAME" #the password has to expire every 30 days, the minimum number of days allowed before the modification of a password will be set to 2
                                   #the user has to receive a warning message 7 days before their password expires
-#chage -M 30 -m 2 -W 7 root
+chage -M 30 -m 2 -W 7 root
 
 
-echo "[7/10] Configuration du pare-feu UFW..."
+echo "Configuration du pare-feu UFW..."
 ufw --force enable #enable the firewall
 ufw allow 4242 #allow incoming trafic on port 4242
 #ufw default deny incoming #blocks all incoming requests
@@ -61,22 +40,9 @@ ufw allow 4242 #allow incoming trafic on port 4242
 touch /etc/sudoers.d/sudo_config
 mkdir -p /var/log/sudo
 
-cat << 'EOF' > /etc/sudoers.d/sudo_config
-Defaults  passwd_tries=3
-Defaults  badpass_message="Message d'erreur personnalisee"
-Defaults  logfile="/var/log/sudo/sudo_config"
-Defaults  log_input, log_output
-Defaults  iolog_dir=/var/log/sudo"
-Defaults  requiretty
-Defaults  secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
-EOF
 
 cp /etc/login.defs /etc/login.defs.backup
-sed -i 's/PASS_MAX_DAYS 99999/PASS_MAX_DAYS 30/' /etc/login.defs
-sed -i 's/PASS_MIN_DAYS 0/PASS_MIN_DAYS 2/' /etc/login.defs
-echo "[1/10] Politique de mot de passe (PAM + chage)..."
-cp /etc/pam.d/common-password /etc/pam.d/common-password.backup
-sed -i 's/pam-pwquality.so rety=3/pam-pwquality.so retry=3 minlen=10 ucredit=-1 dcredit=-1 lcredit=-1 maxrepeat=3 reject_username difok=7 enforce_for_root/' /etc/pam.d/common-password
+
 
 ### === PARAMÈTRES === ###
 MONITOR_SCRIPT="$HOME/monitoring.sh"

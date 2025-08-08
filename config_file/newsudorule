@@ -1,0 +1,14 @@
+
+# Limits connection attempts using sudo
+Defaults passwd_tries=3
+# Displays a custom message when using a wrong password with sudo.
+Defaults badpass_message="WRONG PASSWORD"
+# Sets the input logs file.
+Defaults logfile="/var/log/sudo/sudo.log"
+Defaults log_input, log_output
+# Sets the directory to save additional output and input logs
+Defaults iolog_dir=/var/log/sudo
+# Requires TTY to use sudo
+Defaults requiretty
+# Limits the paths that can be used by sudo to run commands. This setting is already there and you can leave it as it is.
+Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"

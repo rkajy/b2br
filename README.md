@@ -27,9 +27,9 @@ Pour copier de ma debian graphical a ma machine hote:
 
 1_ j'ai lance ssh_config.sh dans la vm
 
-2_ Dans network setting
-ajouter une rege NAT
+2_ Dans network setting ajouter une rege NAT
 SSH TCP 127.0.0.1 ; Host port = 4242;  guest ip = la commande renvoye par la commande ip a; guest port = 4242
+
 
 scp -P 4242 radandri@127.0.0.1:/home/radandri/b2br/debian-preseeded.iso .
 
@@ -98,6 +98,10 @@ Ce projet consiste à sécuriser une machine virtuelle Debian 11 ou 12 en respec
 
 Script post-installation disponible ici :  
 📎 [`post_install.sh`](https://github.com/rkajy/b2br/blob/main/post_install.sh)
+
+## Details des commandes jouees
+
+
 
 Il est automatiquement lancé à la fin de l’installation via le fichier `preseed.cfg`.
 
