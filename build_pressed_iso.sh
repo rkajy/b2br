@@ -12,10 +12,10 @@ MOUNT_DIR="$WORKDIR/mount_iso"
 PRESEED_PATH="$WORKDIR/preseed.cfg"
 POST_INSTALL_PATH="$WORKDIR/post_install.sh"
 MONITORING_SCRIPT_PATH="$WORKDIR/monitoring.sh"
-CONFIG_FILES="$WORKDIR/config_file/*"
+CONFIG_DIR="$WORKDIR/config_file"
 # ================================================
 
-#supprimer l'ancien et reconstruire
+# Supprimer l'ancien dossier et reconstruire
 rm -rf "$EXTRACTED_ISO_DIR"
 
 echo "==> [1/8] Installation des outils requis..."
@@ -29,11 +29,10 @@ fi
 echo "==> [3/8] Préparation des dossiers de travail..."
 mkdir -p "$EXTRACTED_ISO_DIR" "$MOUNT_DIR"
 
-#Verification et demontage si besoin du point de montage
+# Vérification et démontage si besoin du point de montage
 if mount | grep -q "$ISO_NAME"; then
-  sudo unmount "$MOUNT_DIR" 2>/dev/null || true
-  #On cherche et demonte tout point ou ISO_NAME est monte
-  mount | grep "$ISO_NAME" | awk '{print $3}' | xargs -r -n1 sudo unmount || true
+  sudo umount "$MOUNT_DIR" 2>/dev/null || true
+  mount | grep "$ISO_NAME" | awk '{print $3}' | xargs -r -n1 sudo umount || true
 fi
 
 echo "==> [4/8] Montage de l’ISO..."
@@ -44,12 +43,21 @@ cp -rT "$MOUNT_DIR" "$EXTRACTED_ISO_DIR"
 sudo umount "$MOUNT_DIR"
 sudo rm -rf "$MOUNT_DIR"
 
-echo "==> [6/8] Ajout de preseed.cfg et du script post_install.sh dans l’ISO..."
+echo "==> [6/8] Ajout de preseed.cfg, post_install.sh, monitoring.sh et fichiers config dans l’ISO..."
+
 sudo cp "$PRESEED_PATH" "$EXTRACTED_ISO_DIR/"
 sudo cp "$POST_INSTALL_PATH" "$EXTRACTED_ISO_DIR/"
-sudo mkdir -p "$EXTRACTED_ISO_DIR/custom_config"
-sudo cp "$CONFIG_FILES" "$EXTRACTED_ISO_DIR/custom_config/"
 sudo cp "$MONITORING_SCRIPT_PATH" "$EXTRACTED_ISO_DIR/"
+
+sudo mkdir -p "$EXTRACTED_ISO_DIR/custom_config"
+
+shopt -s nullglob
+files=("$CONFIG_DIR"/*)
+if [ ${#files[@]} -gt 0 ]; then
+  sudo cp "${files[@]}" "$EXTRACTED_ISO_DIR/custom_config/"
+else
+  echo "⚠️ Aucun fichier dans $CONFIG_DIR à copier."
+fi
 
 echo "==> [7/8] Modification de isolinux/txt.cfg pour démarrer automatiquement avec preseed..."
 sudo sed -i '/label install/,/append/ s@append.*@append auto=true priority=critical preseed/file=/cdrom/preseed.cfg vga=788 initrd=/install.amd/initrd.gz langage=en country=DE locale=en_US.UTF-8 --- quiet@' "$EXTRACTED_ISO_DIR/isolinux/txt.cfg"
@@ -63,7 +71,6 @@ sudo genisoimage -o "$OUTPUT_ISO" \
   -input-charset utf-8 \
   "$EXTRACTED_ISO_DIR"
 
-# ✅ Vérification de la commande précédente
 if [ $? -eq 0 ]; then
     echo "✅ ISO générée avec succès : $WORKDIR/$OUTPUT_ISO"
 else
@@ -71,6 +78,5 @@ else
     exit 1
 fi
 
-echo "Command to get new iso files preseed"
-
-echo "scp -P 4242 radandri@127.0.0.1:/home/radandri/b2br/debian-preseeded.iso ."
+echo "Commande pour récupérer la nouvelle ISO personnalisée :"
+echo "scp -P 4242 radandri@127.0.0.1:/home/radandri/b2br/$OUTPUT_ISO ."
