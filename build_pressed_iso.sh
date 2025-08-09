@@ -11,7 +11,6 @@ EXTRACTED_ISO_DIR="$WORKDIR/extracted_iso"
 MOUNT_DIR="$WORKDIR/mount_iso"
 PRESEED_PATH="$WORKDIR/preseed.cfg"
 POST_INSTALL_PATH="$WORKDIR/post_install.sh"
-MONITORING_SCRIPT_PATH="$WORKDIR/monitoring.sh"
 CONFIG_DIR="$WORKDIR/config_file"
 # ================================================
 
@@ -47,7 +46,6 @@ echo "==> [6/8] Ajout de preseed.cfg, post_install.sh, monitoring.sh et fichiers
 
 sudo cp "$PRESEED_PATH" "$EXTRACTED_ISO_DIR/"
 sudo cp "$POST_INSTALL_PATH" "$EXTRACTED_ISO_DIR/"
-sudo cp "$MONITORING_SCRIPT_PATH" "$EXTRACTED_ISO_DIR/"
 
 sudo mkdir -p "$EXTRACTED_ISO_DIR/custom_config"
 
