@@ -11,6 +11,9 @@ ssh:
 ssh-root:
 	ssh -p $(PORT) $(ROOT)@$(HOST)
 
+ssh-clean:
+	ssh-keygen -R "[localhost]:4242"
+
 copy_config_repo:
 	scp -r -P $(PORT) config_file $(USER)@$(HOST):/home/$(USER)/
 
